@@ -1,39 +1,54 @@
-BUILD_DIR = "./build/"
-JS_BUILD = "#{BUILD_DIR}js/"
+path = require("path")
+argv = require("yargs").argv
+
+BUILD_DIR = if typeof argv.buildDir == "string" then argv.buildDir else "./build"
+JS_BUILD_DIR = path.join(BUILD_DIR, "js")
+CSS_BUILD_DIR = path.join(BUILD_DIR, "css")
 SERVER_DIR = "../bokeh/server/static/"
 
-module.exports =
+module.exports = {
   buildDir:
     all: BUILD_DIR
-    js: JS_BUILD
-    css: "#{BUILD_DIR}css/"
+    js: JS_BUILD_DIR
+    css: CSS_BUILD_DIR
   serverDir:
     all: SERVER_DIR
-    js: "#{SERVER_DIR}js/"
-    css: "#{SERVER_DIR}css/"
+    js: path.join(SERVER_DIR, "js")
+    css: path.join(SERVER_DIR, "css")
+
   coffee:
-    destination:
-      full: "bokeh.js"
-      fullWithPath: "#{JS_BUILD}bokeh.js"
-      minified: "bokeh.min.js"
+    bokehjs:
+      destination:
+        full: "bokeh.js"
+        fullWithPath: path.join(JS_BUILD_DIR, "bokeh.js")
+        minified: "bokeh.min.js"
+    widgets:
+      destination:
+        full: "bokeh-widgets.js"
+        fullWithPath: path.join(JS_BUILD_DIR, "bokeh-widgets.js")
+        minified: "bokeh-widgets.min.js"
     sources: [
-      "./src/coffee/main.coffee"
+        "./src/coffee/main.coffee"
+        "./src/coffee/widget/main.coffee"
     ]
     watchSources: [
-      "./src/coffee/**/**",
+      "./src/coffee/**/**"
     ]
 
   css:
     sources: [
-      "./build/css/bokeh.css"
+      path.join(CSS_BUILD_DIR, "bokeh.css")
+      path.join(CSS_BUILD_DIR, "bokeh-widgets.css")
     ]
     watchSources: [
-      "./build/css/bokeh.css",
+      path.join(CSS_BUILD_DIR, "bokeh.css")
+      path.join(CSS_BUILD_DIR, "bokeh-widgets.css")
     ]
 
   less:
     sources: [
       "./src/less/bokeh.less",
+      "./src/less/bokeh-widgets.less",
     ]
     watchSources: [
       "./src/less/**/**",
@@ -44,4 +59,4 @@ module.exports =
       "./test/**/**",
       "./src/coffee/**/**",
     ]
-
+}

@@ -157,6 +157,31 @@ as a convenience:
 .. bokeh-plot:: source/docs/user_guide/source_examples/styling_dimensions.py
     :source-position: above
 
+
+.. _userguide_styling_plot_responsive_dimensions:
+
+Responsive Dimensions
+~~~~~~~~~~~~~~~~~~~~~
+
+In addition, you can use the ``responsive`` attribute. The responsive attribute
+causes the plot to fill the container it's sitting in, and to respond to
+changes in browser size. Responsive web elements are common-place in web
+development and the ``responsive`` flag may be useful if you are trying to
+present your plot on a website where you want it to conform to a number of
+browsers. If you set the responsive flag, the ``plot_width`` and ``plot_height`` will
+immediately change when a plot is rendered to fill the container. However,
+those parameters will be used to calculate the initial aspect ratio for your
+plot, so you may want to keep them. Plots will only resize down to a minimum of
+100px (height or width) to prevent problems in displaying your plot.
+
+.. warning::
+    This feature is known not to work when combined with HBox.
+    This is a new feature and may have other issues when used in different circumstances.
+    Please report these issues on the  `Bokeh GitHub repository`_ or the `Bokeh mailing list`_.
+
+.. _Bokeh GitHub repository: https://github.com/bokeh/bokeh
+.. _Bokeh mailing list: https://groups.google.com/a/continuum.io/forum/#!forum/bokeh
+
 .. _userguide_styling_plot_title:
 
 Title
@@ -220,31 +245,22 @@ instance, to set the color of the outline, use ``outline_line_color``:
 Glyphs
 ------
 
-As seen in :ref:`userguide_styling_selecting`, the |select| method can be
-used to retrieve ``GlyphRenderer`` objects from a plot:
-
-.. code-block:: python
-
-    >>> p.select(name="mycircle")
-    [<bokeh.models.renderers.GlyphRenderer at 0x106a4c810>]
-
 To style the fill, line, or text properties of a glyph, it is first
-necessary to obtain a specific ``GlyphRenderer`` from the returned
-list:
+necessary to obtain a specific ``GlyphRenderer``. When using the
+|bokeh.plotting| interface, the glyph functions return the renderer:
 
 .. code-block:: python
 
-    >>> p.select(name="mycircle")[0]
+    >>> r = p.circle([1,2,3,4,5], [2,5,8,2,7])
+    >>> r
     <bokeh.models.renderers.GlyphRenderer at 0x106a4c810>
 
 Then, the glyph itself is obtained from the ``.glyph`` attribute of a
 ``GlyphRenderer``:
 
-.. _userguide_styling_axes:
-
 .. code-block:: python
 
-    >>> p.select(name="mycircle")[0].glyph
+    >>> r.glyph
     <bokeh.models.markers.Circle at 0x10799ba10>
 
 This is the object to set fill, line, or text property values for:
@@ -252,20 +268,53 @@ This is the object to set fill, line, or text property values for:
 .. bokeh-plot:: source/docs/user_guide/source_examples/styling_glyph_properties.py
     :source-position: above
 
-``GlyphRenderer`` objects can also be configured with ``selection_glyph``
-and ``nonselection_glyph`` attributes that control the visual appearance of
-glyphs when selection tools are used.
+.. _userguide_styling_selected_unselected_glyphs:
+
+Selected & Unselected Glyphs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The styling of selected and non-selected glyphs can be customized by
+setting the |selection_glyph| and/or |nonselection_glyph| attributes
+of the |GlyphRenderer| either manually or by passing them to |add_glyph|.
+
+.. |add_glyph| replace:: :func:`~bokeh.models.plots.Plot.add_glyph`
+.. |GlyphRenderer| replace:: :class:`~bokeh.models.renderers.GlyphRenderer`
+.. |selection_glyph| replace:: :attr:`~bokeh.models.renderers.GlyphRenderer.selection_glyph`
+.. |nonselection_glyph| replace:: :attr:`~bokeh.models.renderers.GlyphRenderer.nonselection_glyph`
 
 .. bokeh-plot:: source/docs/user_guide/source_examples/styling_glyph_selections.py
     :source-position: above
 
-Use the lasso tool to select circles on the plot above to see the effect
-on the nonselected glyphs.
+Click/Tap to select circles on the plot above to see the effect on the nonselected glyphs.
+
+Click in the plot, but not on a circle, to see their original state (this
+is set by the original call ``p.circle()``).
+
+The same could be achieved with the models interface as follows:
+
+.. code-block:: python
+
+    p = Plot()
+    source = ColumnDataSource(dict(x=[1, 2, 3], y=[1, 2, 3]))
+
+    initial_circle = Circle(x='x', y='y', fill_color='blue', size=50)
+    selected_circle = Circle(fill_alpha=1, fill_color="firebrick", line_color=None)
+    nonselected_circle = Circle(fill_alpha=0.2, fill_color="blue", line_color="firebrick")
+
+    p.add_glyph(
+      source,
+      initial_circle,
+      selection_glyph=selected_circle,
+      nonselection_glyph=nonselected_circle
+    )
+
 
 .. note::
     Only the *visual* properties of ``selection_glyph`` and
     ``nonselection_glyph`` are considered when renderering. Changing
     positions, sizes, etc. will have no effect.
+
+.. _userguide_styling_axes:
 
 Axes
 ----
@@ -533,8 +582,8 @@ objects:
 
 .. code-block:: python
 
-    >>> p.grid
-    [<bokeh.models.renderers.Legend at 0x106fa2278>]
+    >>> p.legend
+    [<bokeh.models.annotations.Legend at 0x106fa2278>]
 
 This method also returns a splattable list, so that you can set an attribute
 on the list, as if it was a single object, and the attribute is changed
@@ -574,7 +623,7 @@ The default location is ``"top_right"``.
 Label Text
 ~~~~~~~~~~
 
-The visual appearance of the legend labels is controlled by  a collection of
+The visual appearance of the legend labels is controlled by a collection of
 `Text Properties`_, prefixed with ``label_``. For instance, to set the font
 style of the labels, use ``label_text_font_style``.
 
@@ -584,7 +633,7 @@ style of the labels, use ``label_text_font_style``.
 Border
 ~~~~~~
 
-The visual appearance of the legend border is controlled by  a collection of
+The visual appearance of the legend border is controlled by a collection of
 `Line Properties`_, prefixed with ``border_``. For instance, to set the color
 of the border, use ``border_line_color``. To make the border invisible, set
 the border line color to ``None``.
@@ -592,19 +641,30 @@ the border line color to ``None``.
 .. bokeh-plot:: source/docs/user_guide/source_examples/styling_legend_border.py
     :source-position: above
 
+Background
+~~~~~~~~~~
+
+The visual appearance of the legend background is controlled by a collection
+of `Fill Properties`_, prefixed with ``background_``. For instance, to set the
+color of the background, use ``background_fill_color``. To make the background
+transparent, set the ``background_fill_alpha`` to ``0``.
+
+.. bokeh-plot:: source/docs/user_guide/source_examples/styling_legend_background.py
+    :source-position: above
+
 Dimensions
 ~~~~~~~~~~
 
 There are several properties that can be used to control the layout,
-spacing, etc. of the legend compononents:
+spacing, etc. of the legend components:
 
-.. bokeh-prop:: bokeh.models.renderers.Legend.label_standoff
-.. bokeh-prop:: bokeh.models.renderers.Legend.label_width
-.. bokeh-prop:: bokeh.models.renderers.Legend.label_height
-.. bokeh-prop:: bokeh.models.renderers.Legend.glyph_width
-.. bokeh-prop:: bokeh.models.renderers.Legend.glyph_height
-.. bokeh-prop:: bokeh.models.renderers.Legend.legend_padding
-.. bokeh-prop:: bokeh.models.renderers.Legend.legend_spacing
+.. bokeh-prop:: bokeh.models.annotations.Legend.label_standoff
+.. bokeh-prop:: bokeh.models.annotations.Legend.label_width
+.. bokeh-prop:: bokeh.models.annotations.Legend.label_height
+.. bokeh-prop:: bokeh.models.annotations.Legend.glyph_width
+.. bokeh-prop:: bokeh.models.annotations.Legend.glyph_height
+.. bokeh-prop:: bokeh.models.annotations.Legend.legend_padding
+.. bokeh-prop:: bokeh.models.annotations.Legend.legend_spacing
 
 .. bokeh-plot:: source/docs/user_guide/source_examples/styling_legend_dimensions.py
     :source-position: above

@@ -23,11 +23,14 @@ always be active regardless of what other tools are currently active.
 from __future__ import absolute_import
 
 from ..plot_object import PlotObject
-from ..properties import Any, Bool, String, Enum, Instance, Either, List, Dict, Tuple
+from ..properties import abstract, Float, Color
+from ..properties import (Any, Bool, String, Enum, Instance, Either, List,
+                          Dict, Tuple)
 from ..enums import Dimension
 
 from .renderers import Renderer
-from .actions import Action, Callback
+from .callbacks import Callback
+
 
 class ToolEvents(PlotObject):
     """
@@ -36,6 +39,8 @@ class ToolEvents(PlotObject):
 
     geometries = List(Dict(String, Any))
 
+
+@abstract
 class Tool(PlotObject):
     """ A base class for all interactive tool types. ``Tool`` is
     not generally useful to instantiate on its own.
@@ -45,6 +50,7 @@ class Tool(PlotObject):
     plot = Instance(".models.plots.Plot", help="""
     The Plot that this tool will act on.
     """)
+
 
 class PanTool(Tool):
     """ *toolbar icon*: |pan_icon|
@@ -70,6 +76,7 @@ class PanTool(Tool):
     height of the plot.
     """)
 
+
 class WheelZoomTool(Tool):
     """ *toolbar icon*: |wheel_zoom_icon|
 
@@ -93,6 +100,7 @@ class WheelZoomTool(Tool):
     vertically across the height of the plot.
     """)
 
+
 class PreviewSaveTool(Tool):
     """ *toolbar icon*: |save_icon|
 
@@ -110,6 +118,7 @@ class PreviewSaveTool(Tool):
 
     """
 
+
 class ResetTool(Tool):
     """ *toolbar icon*: |reset_icon|
 
@@ -126,6 +135,7 @@ class ResetTool(Tool):
         :height: 18pt
     """
 
+
 class ResizeTool(Tool):
     """ *toolbar icon*: |resize_icon|
 
@@ -137,21 +147,24 @@ class ResizeTool(Tool):
 
     """
 
+
 class TapTool(Tool):
     """ *toolbar icon*: |tap_select_icon|
 
     The tap selection tool allows the user to select at single points by
     left-clicking a mouse, or tapping with a finger.
 
+    See :ref:`userguide_styling_selected_unselected_glyphs` for information
+    on styling selected and unselected glyphs.
+
     .. |tap_select_icon| image:: /_images/icons/TapSelect.png
         :height: 18pt
 
-   .. note::
+    .. note::
         Selections can be comprised of multiple regions, even those
         made by different selection tools. Hold down the <<shift>> key
         while making a selection to append the new selection to any
         previous seletion that might exist.
-
     """
 
     names = List(String, help="""
@@ -164,14 +177,15 @@ class TapTool(Tool):
     defaults to all renderers on a plot.
     """)
 
-    action = Instance(Action, help="""
+    callback = Instance(Callback, help="""
     A client-side action specification, like opening a URL, showing
-    a dialog box, etc. See :class:`bokeh.models.Action` for details.
+    a dialog box, etc. See :class:`~bokeh.models.actions.Action` for details.
     """)
 
     always_active = Bool(True, help="""
     Whether the hover tool must be explicitly activated.
     """)
+
 
 class CrosshairTool(Tool):
     """ *toolbar icon*: |inspector_icon|
@@ -197,6 +211,32 @@ class CrosshairTool(Tool):
     only a vertical line will be drawn.
     """)
 
+    line_color = Color(default="black", help="""
+    A color to use to stroke paths with.
+
+    Acceptable values are:
+
+    - any of the 147 named `CSS colors`_, e.g ``'green'``, ``'indigo'``
+    - an RGB(A) hex value, e.g., ``'#FF0000'``, ``'#44444444'``
+    - a 3-tuple of integers (r,g,b) between 0 and 255
+    - a 4-tuple of (r,g,b,a) where r,g,b are integers between 0..255 and a is between 0..1
+
+    .. _CSS colors: http://www.w3schools.com/cssref/css_colornames.asp
+
+    """)
+
+    line_width = Float(default=1, help="""
+    Stroke width in units of pixels.
+    """)
+
+    line_alpha = Float(default=1.0, help="""
+    An alpha value to use to stroke paths with.
+
+    Acceptable values are floating point numbers between 0 (transparent)
+    and 1 (opaque).
+
+    """)
+
 class BoxZoomTool(Tool):
     """ *toolbar icon*: |box_zoom_icon|
 
@@ -220,6 +260,7 @@ class BoxZoomTool(Tool):
     dimension can be controlled.
     """)
 
+
 class BoxSelectTool(Tool):
     """ *toolbar icon*: |box_select_icon|
 
@@ -227,6 +268,10 @@ class BoxSelectTool(Tool):
     Plot by indicating a rectangular region by dragging the
     mouse or a finger over the plot region. The end of the drag
     event indicates the selection region is ready.
+
+    See :ref:`userguide_styling_selected_unselected_glyphs` for information
+    on styling selected and unselected glyphs.
+
 
     .. |box_select_icon| image:: /_images/icons/BoxSelect.png
         :height: 18pt
@@ -243,9 +288,9 @@ class BoxSelectTool(Tool):
     defaults to all renderers on a plot.
     """)
 
-    select_every_mousemove = Bool(True, help="""
-    An explicit list of renderers to hit test again. If unset,
-    defaults to all renderers on a plot.
+    select_every_mousemove = Bool(False, help="""
+    Whether a selection computation should happen on every mouse
+    event, or only once, when the selection region is completed. Default: False
     """)
 
     dimensions = List(Enum(Dimension), default=["width", "height"], help="""
@@ -266,6 +311,7 @@ class BoxSelectTool(Tool):
     :geometry: object containing the coordinates of the selection box
     """)
 
+
 class BoxSelectionOverlay(Renderer):
     """ An overlay renderer that Tool objects can use to render a
     'rubber band' selection box on a Plot.
@@ -278,6 +324,7 @@ class BoxSelectionOverlay(Renderer):
     The tool that this overlay should respond to.
     """)
 
+
 class LassoSelectTool(Tool):
     """ *toolbar icon*: |lasso_select_icon|
 
@@ -285,6 +332,9 @@ class LassoSelectTool(Tool):
     Plot by indicating a free-drawn "lasso" region by dragging the
     mouse or a finger over the plot region. The end of the drag
     event indicates the selection region is ready.
+
+    See :ref:`userguide_styling_selected_unselected_glyphs` for information
+    on styling selected and unselected glyphs.
 
     .. note::
         Selections can be comprised of multiple regions, even those
@@ -308,8 +358,9 @@ class LassoSelectTool(Tool):
 
     select_every_mousemove = Bool(True, help="""
     Whether a selection computation should happen on every mouse
-    event, or only once, when the selection region is completed.
+    event, or only once, when the selection region is completed. Default: True
     """)
+
 
 class PolySelectTool(Tool):
     """ *toolbar icon*: |poly_select_icon|
@@ -319,6 +370,9 @@ class PolySelectTool(Tool):
     clicks (or taps) add successive points to the definition of the
     polygon, and a double click (or tap) indicates the selection
     region is ready.
+
+    See :ref:`userguide_styling_selected_unselected_glyphs` for information
+    on styling selected and unselected glyphs.
 
     .. note::
         Selections can be comprised of multiple regions, even those
@@ -339,6 +393,7 @@ class PolySelectTool(Tool):
     An explicit list of renderers to hit test again. If unset,
     defaults to all renderers on a plot.
     """)
+
 
 class HoverTool(Tool):
     """ *toolbar icon*: |inspector_icon|
@@ -371,8 +426,26 @@ class HoverTool(Tool):
     off by setting ``tooltips=None``.
 
     .. warning::
-        Point hit testing is not currently available on all glyphs. Hover tool
-        currently does not work with line or image type glyphs.
+
+        Hover tool does not currently work with the following glyphs:
+
+        .. hlist::
+            :columns: 3
+
+            * annulus
+            * arc
+            * bezier
+            * gear
+            * image
+            * image_rgba
+            * image_url
+            * multi_line
+            * oval
+            * patch
+            * quadratic
+            * ray
+            * segment
+            * text
 
     .. |hover_icon| image:: /_images/icons/Inspector.png
         :height: 18pt
@@ -449,6 +522,7 @@ class HoverTool(Tool):
     current mouse position, or interpolate along the line to the current
     mouse position.
     """)
+
 
 class HelpTool(Tool):
     """

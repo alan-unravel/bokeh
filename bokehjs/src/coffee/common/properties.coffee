@@ -6,15 +6,34 @@ class Property extends HasProperties
 
   initialize: (attrs, options) ->
     super(attrs, options)
-    obj = @get('obj')
-    attr = @get('attr')
+    @obj = @get('obj')
+    @attr = @get('attr')
 
-    attr_value = obj.get(attr)
+    # TODO (bev) Quick fix, see https://github.com/bokeh/bokeh/pull/2684
+    @listenTo(@obj, "change:#{@attr}", () ->
+        @_init()
+        @obj.trigger("propchange")
+    )
+
+    @_init()
+
+  serializable_in_document: () ->
+    if @get('obj')?
+      result = @get('obj').serializable_in_document()
+      if not result
+        console.log("  'obj' field of #{@.constructor.name} has a nonserializable value of type #{@get('obj').constructor.name}")
+      result
+    else
+      true
+
+  _init: () ->
+
+    attr_value = @obj.get(@attr)
 
     if _.isObject(attr_value) and not _.isArray(attr_value)
       # use whichever the spec provides if there is a spec
       @spec = attr_value
-      if @spec.value?
+      if not _.isUndefined(@spec.value)
         @fixed_value = @spec.value
       else if @spec.field?
         @field = @spec.field
@@ -28,9 +47,10 @@ class Property extends HasProperties
       throw new Error("field value for property '#{attr}' is not a string")
 
     if @fixed_value?
-      @validate(@fixed_value, attr)
+      @validate(@fixed_value, @attr)
 
   value: () ->
+    # XXX: this `?' needs to be investigated for 0.10
     result = if @fixed_value? then @fixed_value else NaN
     return @transform([result])[0]
 
@@ -120,7 +140,7 @@ class Coord extends Property
 class Color extends Property
 
   validate: (value, attr) ->
-    if not svg_colors[value]? and value.substring(0, 1) != "#" and not @valid_rgb(value)
+    if not svg_colors[value.toLowerCase()]? and value.substring(0, 1) != "#" and not @valid_rgb(value)
       throw new Error("color property '#{attr}' given invalid value: #{value}")
     return true
 
@@ -242,7 +262,7 @@ class Line extends ContextProperties
     ctx.strokeStyle = @color.value()
     ctx.globalAlpha = @alpha.value()
     ctx.lineWidth   = @width.value()
-    ctx.lineCap     = @join.value()
+    ctx.lineJoin    = @join.value()
     ctx.lineCap     = @cap.value()
     ctx.setLineDash(@dash.value())
     ctx.setLineDashOffset(@dash_offset.value())

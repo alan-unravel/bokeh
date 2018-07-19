@@ -6,9 +6,11 @@ from __future__ import absolute_import
 
 from .tickers import Ticker
 from ..plot_object import PlotObject
+from ..properties import abstract
 from ..properties import Bool, Int, String, Enum, Auto, List, Dict, Either, Instance
 from ..enums import DatetimeUnits, RoundingFunction, NumeralLanguage
 
+@abstract
 class TickFormatter(PlotObject):
     """ A base class for all tick formatter types. ``TickFormatter`` is
     not generally useful to instantiate on its own.
@@ -207,9 +209,25 @@ class DatetimeTickFormatter(TickFormatter):
 
     The enum values correspond roughly to different "time scales". The
     corresponding value is a list of `strftime`_ formats to use for
-    formatting datetime values that fall in in that "time scale".
+    formatting datetime tick values that fall in in that "time scale".
+
+    By default, only the first format string passed for each time scale
+    will be used. By default, all leading zeros are stripped away from
+    the formatted labels. These behaviors cannot be changed as of now.
+
+    An example of specifying the same date format over a range of time scales::
+
+        DatetimeTickFormatter(
+            formats=dict(
+                hours=["%B %Y"],
+                days=["%B %Y"],
+                months=["%B %Y"],
+                years=["%B %Y"],
+            )
+        )
 
     This list of supported `strftime`_ formats is reproduced below.
+
 
     .. warning::
         The client library BokehJS uses the `timezone`_ library to
@@ -217,7 +235,7 @@ class DatetimeTickFormatter(TickFormatter):
         claim that `timezone`_ makes to support "the full compliment
         of GNU date format specifiers." However, this claim has not
         been tested exhaustively against this list. If you find formats
-        that do not function as expected, please submit a `github issue`,
+        that do not function as expected, please submit a `github issue`_,
         so that the documentation can be updated appropriately.
 
     %a
@@ -253,6 +271,11 @@ class DatetimeTickFormatter(TickFormatter):
     %e
         Like %d, the day of the month as a decimal number, but a
         leading zero is replaced by a space.
+
+    %f
+        Microsecond as a decimal number, zero-padded on the left (range
+        000000-999999). This is an extension to the set of directives
+        available to `timezone`_.
 
     %F
         Equivalent to %Y-%m-%d (the ISO 8601 date format).
@@ -296,7 +319,15 @@ class DatetimeTickFormatter(TickFormatter):
         The minute as a decimal number (range 00 to 59).
 
     %n
-        A newline character.
+        A newline character. Bokeh text does not currently support
+        newline characters.
+
+    %N
+        Nanosecond as a decimal number, zero-padded on the left (range
+        000000000-999999999). Supports a padding width specifier, i.e.
+        %3N displays 3 leftmost digits. However, this is only accurate
+        to the millisecond level of precision due to limitations of
+        `timezone`_.
 
     %p
         Either "AM" or "PM" according to the given time value, or the
@@ -324,7 +355,8 @@ class DatetimeTickFormatter(TickFormatter):
         is up to 60 to allow for occasional leap seconds.)
 
     %t
-        A tab character.
+        A tab character. Bokeh text does not currently support tab
+        characters.
 
     %T
         The time in 24-hour notation (%H:%M:%S).
